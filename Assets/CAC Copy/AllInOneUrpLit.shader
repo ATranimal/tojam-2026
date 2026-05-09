@@ -215,8 +215,8 @@ Shader "ShadowOnlySprite"
 
             // -------------------------------------
             // Shader Stages
-            #pragma vertex ShadowPassVertex
-            #pragma fragment ShadowPassFragment
+            #pragma vertex ShadowPassVertexFixed
+            #pragma fragment ShadowPassFragmentFixed
 
             // -------------------------------------
             // Material Keywords
@@ -229,9 +229,6 @@ Shader "ShadowOnlySprite"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             // -------------------------------------
-            // Universal Pipeline keywords
-
-            // -------------------------------------
             // Unity defined keywords
             #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
 
@@ -241,7 +238,68 @@ Shader "ShadowOnlySprite"
             // -------------------------------------
             // Includes
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            // Custom shadow caster that uses a fixed world-space normal for the bias
+            // calculation, preventing the shadow from shifting when the camera rotates.
+            float3 _LightDirection;
+            float3 _LightPosition;
+
+            struct ShadowAttributes
+            {
+                float4 positionOS : POSITION;
+                float2 texcoord   : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct ShadowVaryings
+            {
+                float2 uv         : TEXCOORD0;
+                float4 positionCS : SV_POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            ShadowVaryings ShadowPassVertexFixed(ShadowAttributes input)
+            {
+                ShadowVaryings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+
+                // Use a fixed up normal instead of the mesh's vertex normal.
+                // The mesh normal on a sprite points toward the camera, so it changes
+                // with camera rotation and causes the shadow to shift. A fixed normal
+                // keeps the shadow bias consistent regardless of camera angle.
+                float3 normalWS = float3(0.0, 1.0, 0.0);
+
+                #if _CASTING_PUNCTUAL_LIGHT_SHADOW
+                    float3 lightDirectionWS = normalize(_LightPosition - positionWS);
+                #else
+                    float3 lightDirectionWS = _LightDirection;
+                #endif
+
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
+
+                #if UNITY_REVERSED_Z
+                    output.positionCS.z = min(output.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #else
+                    output.positionCS.z = max(output.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #endif
+
+                output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);
+                return output;
+            }
+
+            half4 ShadowPassFragmentFixed(ShadowVaryings input) : SV_TARGET
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                Alpha(SampleAlbedoAlpha(input.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, _BaseColor, _Cutoff);
+                return 0;
+            }
+
             ENDHLSL
         }
 

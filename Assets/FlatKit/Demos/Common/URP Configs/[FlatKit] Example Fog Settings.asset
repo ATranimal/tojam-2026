@@ -84,7 +84,7 @@ MonoBehaviour:
   distanceHeightBlend: 0.5
   renderEvent: 550
   applyInSceneView: 1
-  effectMaterial: {fileID: 0}
+  effectMaterial: {fileID: 3809722197779856838}
 --- !u!21 &3809722197779856838
 Material:
   serializedVersion: 8
@@ -132,13 +132,13 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DistanceFogIntensity: 0.423
-    - _DistanceHeightBlend: 0.601
-    - _Far: 50
+    - _DistanceFogIntensity: 0.5
+    - _DistanceHeightBlend: 0.5
+    - _Far: 150
     - _HeightFogIntensity: 0.5
     - _HighWorldY: 35
     - _LowWorldY: 5
-    - _Near: 1
+    - _Near: 30
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -1,0 +1,242 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Daytime
+  m_Shader: {fileID: 4800000, guid: e1cfc970b4c938d40bdfdb106a8439ec, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _MAPPING_6_FRAMES_LAYOUT
+  - _MIRRORONBACK_ON
+  - _SUNDISK_HIGH_QUALITY
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: _AuroraTiltAxis _StarSizeMax
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BackTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DownTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FrontTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LeftTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 2c088de00ed2d14448317b54cf529582, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RightTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Tex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _UpTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AddPrecomputedVelocity: 0
+    - _AlphaClip: 0
+    - _AlphaToMask: 0
+    - _AtmosphereThickness: 1.31
+    - _AuroraAmplitude: 0
+    - _AuroraBottomFade: 4
+    - _AuroraFrequency: 4
+    - _AuroraGradientStop: 0.311
+    - _AuroraGradientStop2: 0.645
+    - _AuroraHeight: 0.68
+    - _AuroraHeightRange: 0.3
+    - _AuroraIntensity: 4.6
+    - _AuroraNoiseScale: 1
+    - _AuroraScrollSpeed: 0.45
+    - _AuroraSharpness: 1.65
+    - _AuroraThickness: 0.102
+    - _AuroraTiling: 1
+    - _AuroraTiltAngle: 41.3
+    - _Blend: 0
+    - _BlendModePreserveSpecular: 1
+    - _BumpScale: 1
+    - _ClearCoatMask: 0
+    - _ClearCoatSmoothness: 0
+    - _CloudBaseHeight: 0.6
+    - _CloudDensity: 0.91
+    - _CloudEdgeSharpness: 1.09
+    - _CloudHeightCenter: 0.82
+    - _CloudHeightRange: 0.37
+    - _CloudIntensity: 2.88
+    - _CloudLayerCount: 4
+    - _CloudLayerSpacing: 0.05
+    - _CloudLayerXOffset: 0.79
+    - _CloudLengthMax: 1.06
+    - _CloudLengthMin: 0.2
+    - _CloudLevelCount: 5
+    - _CloudLevelSpacing: 0.3
+    - _CloudScrollBaseSpeed: -0.007
+    - _CloudScrollSpeedVariation: 0.036
+    - _CloudSoftness: 1.93
+    - _CloudThickness: 0.02
+    - _CloudThicknessMax: 0.022
+    - _CloudThicknessMin: 0.0001
+    - _CloudTiling: 1
+    - _CloudVerticalJitter: 0
+    - _Cull: 2
+    - _Cutoff: 0.5
+    - _DetailAlbedoMapScale: 1
+    - _DetailNormalMapScale: 1
+    - _DitherStrength: 16
+    - _DstBlend: 0
+    - _DstBlendAlpha: 0
+    - _EnvironmentReflections: 1
+    - _EquatorFocus: 0.49
+    - _Exposure: 0.4
+    - _GlossMapScale: 0
+    - _Glossiness: 0
+    - _GlossyReflections: 0
+    - _ImageType: 0
+    - _Layout: 0
+    - _Mapping: 0
+    - _Metallic: 0
+    - _MirrorOnBack: 1
+    - _OcclusionStrength: 1
+    - _Parallax: 0.005
+    - _QueueOffset: 0
+    - _ReceiveShadows: 1
+    - _Rotation: 0
+    - _SkyRotation: 99
+    - _Smoothness: 0.5
+    - _SmoothnessTextureChannel: 0
+    - _SpecularHighlights: 1
+    - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
+    - _StarConcavity: 0.71
+    - _StarDensity: 0
+    - _StarGlow: 20
+    - _StarIntensity: 0.16
+    - _StarSize: 0.29
+    - _StarSizeMax: 0.17
+    - _StarSizeMin: 0.08
+    - _StarTiling: 300
+    - _SunDisk: 2
+    - _SunSize: 0.15
+    - _SunSizeConvergence: 5.8
+    - _Surface: 0
+    - _TwinkleProbability: 0.8
+    - _TwinkleSpeed: 1.6
+    - _TwinkleStrength: 0.48
+    - _VerticalExponent: 0.93
+    - _WorkflowMode: 1
+    - _XRMotionVectorsPass: 1
+    - _ZWrite: 1
+    m_Colors:
+    - _AuroraColorHigh: {r: 0.63118356, g: 0.6549441, b: 0.30584654, a: 1}
+    - _AuroraColorLow: {r: 0.34648347, g: 0.9068456, b: 0.3464835, a: 1}
+    - _AuroraColorMid: {r: 0.07274078, g: 0.02281367, b: 1.6121688, a: 1}
+    - _AuroraTiltAxis: {r: 1, g: 0, b: 1, a: 0}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BottomColor: {r: 0.29999998, g: 0.29999998, b: 1, a: 1}
+    - _CloudColor: {r: 0.42907998, g: 0.41420433, b: 0.49056602, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Direction: {r: 0, g: 1, b: 0, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GroundColor: {r: 0, g: 0.60784316, b: 0.4745098, a: 1}
+    - _MiddleColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SkyBottom: {r: 0.3890174, g: 0.8867924, b: 0.7776031, a: 1}
+    - _SkyTint: {r: 0, g: 0.15294118, b: 0.18431373, a: 1}
+    - _SkyTop: {r: 0.28555536, g: 0.7604109, b: 0.8773585, a: 1}
+    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _StarColor: {r: 0, g: 30.439678, b: 21.92966, a: 1}
+    - _Tint: {r: 0.04481131, g: 0.5, b: 0.11862272, a: 0.5}
+    - _TopColor: {r: 1, g: 0.29999998, b: 0.29999998, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+--- !u!114 &3108740242765614885
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
