@@ -169,7 +169,8 @@ namespace StarterAssets
             get
             {
 #if ENABLE_INPUT_SYSTEM
-                return _playerInput.currentControlScheme == "KeyboardMouse";
+                string scheme = _playerInput.currentControlScheme;
+                return scheme == "KeyboardMouse" || scheme == "Keyboard&Mouse";
 #else
                 return false;
 #endif
@@ -525,16 +526,6 @@ namespace StarterAssets
                 _animator.SetFloat(_animIDSpeed, _animationBlend);
                 _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
             }
-
-            // Handle sprite bounce animation
-            if (_input.move != Vector2.zero)
-            {
-                StartBounceAnimation();
-            }
-            else
-            {
-                StopBounceAnimation();
-            }
         }
 
         private void LogMovementStall(
@@ -578,37 +569,6 @@ namespace StarterAssets
                     + $"positionBefore={positionBeforeMove}, positionAfter={transform.position}",
                 this
             );
-        }
-
-        private void StartBounceAnimation()
-        {
-            // Only start if not already bouncing
-            if (_bounceTween != null && _bounceTween.IsActive())
-                return;
-
-            if (spriteContainer == null)
-                return;
-
-            _bounceTween = spriteContainer.transform
-                .DOLocalMoveY(_spriteContainerOriginalPos.y + bounceHeight, bounceDuration / 2)
-                .SetEase(Ease.OutQuad)
-                .SetLoops(-1, LoopType.Yoyo);
-        }
-
-        private void StopBounceAnimation()
-        {
-            if (spriteContainer == null)
-                return;
-
-            if (_bounceTween != null && _bounceTween.IsActive())
-            {
-                _bounceTween.Kill();
-            }
-
-            // Return to original position smoothly
-            spriteContainer.transform
-                .DOLocalMoveY(_spriteContainerOriginalPos.y, 0.2f)
-                .SetEase(Ease.OutQuad);
         }
 
         private void JumpAndGravity()
