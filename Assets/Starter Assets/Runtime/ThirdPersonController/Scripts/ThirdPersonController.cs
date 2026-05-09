@@ -1,0 +1,753 @@
+﻿using UnityEngine;
+using DG.Tweening;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+
+/* Note: animations are called via the controller for both the character and capsule using animator null checks
+ */
+
+namespace StarterAssets
+{
+    [RequireComponent(typeof(CharacterController))]
+#if ENABLE_INPUT_SYSTEM
+    [RequireComponent(typeof(PlayerInput))]
+#endif
+    public class ThirdPersonController : MonoBehaviour
+    {
+        [Header("Player")]
+        [Tooltip("Move speed of the character in m/s")]
+        public float MoveSpeed = 2.0f;
+
+        [Tooltip("Sprint speed of the character in m/s")]
+        public float SprintSpeed = 5.335f;
+
+        [Tooltip("How fast the character turns to face movement direction")]
+        [Range(0.0f, 0.3f)]
+        public float RotationSmoothTime = 0.12f;
+
+        [Tooltip("Acceleration and deceleration")]
+        public float SpeedChangeRate = 10.0f;
+
+        public AudioClip LandingAudioClip;
+        public AudioClip[] FootstepAudioClips;
+
+        [Range(0, 1)]
+        public float FootstepAudioVolume = 0.5f;
+
+        [Space(10)]
+        [Tooltip("The height the player can jump")]
+        public float JumpHeight = 1.2f;
+
+        [Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
+        public float Gravity = -15.0f;
+
+        [Space(10)]
+        [Tooltip(
+            "Time required to pass before being able to jump again. Set to 0f to instantly jump again"
+        )]
+        public float JumpTimeout = 0.50f;
+
+        [Tooltip(
+            "Time required to pass before entering the fall state. Useful for walking down stairs"
+        )]
+        public float FallTimeout = 0.15f;
+
+        [Header("Player Grounded")]
+        [Tooltip(
+            "If the character is grounded or not. Not part of the CharacterController built in grounded check"
+        )]
+        public bool Grounded = true;
+
+        [Tooltip("Useful for rough ground")]
+        public float GroundedOffset = -0.14f;
+
+        [Tooltip(
+            "The radius of the grounded check. Should match the radius of the CharacterController"
+        )]
+        public float GroundedRadius = 0.28f;
+
+        [Tooltip("What layers the character uses as ground")]
+        public LayerMask GroundLayers;
+
+        [Header("Cliff Detection")]
+        [Tooltip("Enable cliff detection to prevent walking off edges")]
+        public bool EnableCliffDetection = true;
+
+        [Tooltip("How far ahead to check for cliffs (in meters)")]
+        public float CliffCheckDistance = 0.5f;
+
+        [Tooltip("Maximum safe drop height (small steps OK, larger drops blocked)")]
+        public float MaxSafeDropHeight = 0.5f;
+
+        [Tooltip("Show cliff detection rays in Scene view for debugging")]
+        public bool DebugCliffDetection = false;
+
+        [Header("Cinemachine")]
+        [Tooltip(
+            "The follow target set in the Cinemachine Virtual Camera that the camera will follow"
+        )]
+        public GameObject CinemachineCameraTarget;
+
+        [Tooltip("How far in degrees can you move the camera up")]
+        public float TopClamp = 70.0f;
+
+        [Tooltip("How far in degrees can you move the camera down")]
+        public float BottomClamp = -30.0f;
+
+        [Tooltip(
+            "Additional degress to override the camera. Useful for fine tuning camera position when locked"
+        )]
+        public float CameraAngleOverride = 0.0f;
+
+        [Tooltip("For locking the camera position on all axis")]
+        public bool LockCameraPosition = false;
+
+        [SerializeField]
+        SpriteRenderer shifterSprite;
+
+        [SerializeField]
+        SpriteRenderer shifterShadowSprite;
+
+        [SerializeField]
+        GameObject spriteContainer;
+
+        [Header("Movement Animation")]
+        [SerializeField]
+        float bounceHeight = 0.06f;
+        [SerializeField]
+        float bounceDuration = 0.3f;
+
+        [Header("Movement Debug")]
+        [Tooltip("Log when movement input exists but the CharacterController is not making progress")]
+        public bool DebugMovementStalls = false;
+
+        [Tooltip("How long blocked movement must persist before another stall log is emitted")]
+        public float StallLogInterval = 0.75f;
+
+        // cinemachine
+        private Vector3 _spriteContainerOriginalPos;
+        private Tween _bounceTween;
+        private float _cinemachineTargetYaw;
+        private float _cinemachineTargetPitch;
+
+        // player
+        private float _speed;
+        private float _animationBlend;
+        private float _targetRotation = 0.0f;
+        private float _rotationVelocity;
+        private float _verticalVelocity;
+        private float _terminalVelocity = 53.0f;
+
+        // timeout deltatime
+        private float _jumpTimeoutDelta;
+        private float _fallTimeoutDelta;
+
+        // animation IDs
+        private int _animIDSpeed;
+        private int _animIDGrounded;
+        private int _animIDJump;
+        private int _animIDFreeFall;
+        private int _animIDMotionSpeed;
+
+#if ENABLE_INPUT_SYSTEM
+        private PlayerInput _playerInput;
+#endif
+        private Animator _animator;
+        private CharacterController _controller;
+        private StarterAssetsInputs _input;
+        private GameObject _mainCamera;
+
+        private const float _threshold = 0.01f;
+
+        private bool _hasAnimator;
+        private float _lastStallLogTime = float.NegativeInfinity;
+        private int _zeroVelocityInputFrames = 0;
+
+        private bool IsCurrentDeviceMouse
+        {
+            get
+            {
+#if ENABLE_INPUT_SYSTEM
+                return _playerInput.currentControlScheme == "KeyboardMouse";
+#else
+                return false;
+#endif
+            }
+        }
+
+        private void Awake()
+        {
+            // get a reference to our main camera
+            if (_mainCamera == null)
+            {
+                _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            }
+        }
+
+        private void Start()
+        {
+            _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
+
+            _hasAnimator = TryGetComponent(out _animator);
+            _controller = GetComponent<CharacterController>();
+            _input = GetComponent<StarterAssetsInputs>();
+#if ENABLE_INPUT_SYSTEM
+            _playerInput = GetComponent<PlayerInput>();
+#else
+            Debug.LogError(
+                "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it"
+            );
+#endif
+
+            AssignAnimationIDs();
+
+            // Store original sprite container position
+            if (spriteContainer != null)
+            {
+                _spriteContainerOriginalPos = spriteContainer.transform.localPosition;
+            }
+
+            // reset our timeouts on start
+            _jumpTimeoutDelta = JumpTimeout;
+            _fallTimeoutDelta = FallTimeout;
+        }
+
+        private void Update()
+        {
+            _hasAnimator = TryGetComponent(out _animator);
+
+            JumpAndGravity();
+            GroundedCheck();
+            Move();
+        }
+
+        private void LateUpdate()
+        {
+            CameraRotation();
+        }
+
+        private void AssignAnimationIDs()
+        {
+            _animIDSpeed = Animator.StringToHash("Speed");
+            _animIDGrounded = Animator.StringToHash("Grounded");
+            _animIDJump = Animator.StringToHash("Jump");
+            _animIDFreeFall = Animator.StringToHash("FreeFall");
+            _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+        }
+
+        private void GroundedCheck()
+        {
+            // set sphere position, with offset
+            Vector3 spherePosition = new Vector3(
+                transform.position.x,
+                transform.position.y - GroundedOffset,
+                transform.position.z
+            );
+            Grounded = Physics.CheckSphere(
+                spherePosition,
+                GroundedRadius,
+                GroundLayers,
+                QueryTriggerInteraction.Ignore
+            );
+
+            // update animator if using character
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDGrounded, Grounded);
+            }
+        }
+
+        private bool IsCliffAhead(Vector3 moveDirection, out Vector3 safeDirection)
+        {
+            safeDirection = moveDirection;
+
+            if (!EnableCliffDetection || !Grounded || moveDirection.magnitude < 0.01f)
+            {
+                return false; // No cliff detected if disabled, airborne, or not moving
+            }
+
+            // Check if the full movement direction is safe
+            if (!CheckCliffInDirection(moveDirection))
+            {
+                // Full direction is safe
+                return false;
+            }
+
+            // If diagonal movement is blocked, try the individual X and Z components
+            if (Mathf.Abs(moveDirection.x) > 0.01f && Mathf.Abs(moveDirection.z) > 0.01f)
+            {
+                // Try X-only movement
+                Vector3 xOnly = new Vector3(moveDirection.x, 0, 0);
+                bool xSafe = !CheckCliffInDirection(xOnly);
+
+                // Try Z-only movement
+                Vector3 zOnly = new Vector3(0, 0, moveDirection.z);
+                bool zSafe = !CheckCliffInDirection(zOnly);
+
+                // If either direction is safe, use it
+                if (xSafe && !zSafe)
+                {
+                    safeDirection = xOnly;
+                    return false; // Allow movement in X direction
+                }
+                else if (zSafe && !xSafe)
+                {
+                    safeDirection = zOnly;
+                    return false; // Allow movement in Z direction
+                }
+                else if (xSafe && zSafe)
+                {
+                    // Both are safe - this shouldn't happen if full diagonal was blocked
+                    // but just in case, allow the original direction
+                    return false;
+                }
+            }
+
+            // All directions blocked
+            safeDirection = Vector3.zero;
+            return true;
+        }
+
+        private bool CheckCliffInDirection(Vector3 direction)
+        {
+            if (direction.magnitude < 0.01f)
+            {
+                return false;
+            }
+
+            // Calculate the check position ahead of the player
+            Vector3 checkPosition = transform.position + direction.normalized * CliffCheckDistance;
+
+            // Start the raycast from current ground level
+            Vector3 rayStart = new Vector3(checkPosition.x, transform.position.y + 0.5f, checkPosition.z);
+
+            // Cast ray downward to check for ground ahead
+            RaycastHit hit;
+            bool groundAhead = Physics.Raycast(
+                rayStart,
+                Vector3.down,
+                out hit,
+                GroundedOffset + MaxSafeDropHeight + 2f,
+                GroundLayers,
+                QueryTriggerInteraction.Ignore
+            );
+
+            // Debug visualization
+            if (DebugCliffDetection)
+            {
+                Debug.DrawRay(rayStart, Vector3.down * (GroundedOffset + MaxSafeDropHeight + 2f),
+                    groundAhead ? Color.green : Color.red);
+            }
+
+            if (!groundAhead)
+            {
+                return true; // Cliff detected - no ground at all
+            }
+
+            // Check if the drop is too steep
+            float dropHeight = transform.position.y - hit.point.y;
+
+            if (DebugCliffDetection)
+            {
+                Debug.DrawLine(transform.position, hit.point,
+                    dropHeight > MaxSafeDropHeight ? Color.yellow : Color.cyan);
+            }
+
+            return dropHeight > MaxSafeDropHeight; // Cliff if drop is too high
+        }
+
+        private void CameraRotation()
+        {
+            // if there is an input and camera position is not fixed
+            if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
+            {
+                //Don't multiply mouse input by Time.deltaTime;
+                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+
+                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
+                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
+            }
+
+            // clamp our rotations so our values are limited 360 degrees
+            _cinemachineTargetYaw = ClampAngle(
+                _cinemachineTargetYaw,
+                float.MinValue,
+                float.MaxValue
+            );
+            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+
+            // Cinemachine will follow this target
+            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
+                _cinemachineTargetPitch + CameraAngleOverride,
+                _cinemachineTargetYaw,
+                0.0f
+            );
+        }
+
+        private void Move()
+        {
+            Vector3 positionBeforeMove = transform.position;
+
+            // set target speed based on move speed, sprint speed and if sprint is pressed
+            float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
+
+            // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
+
+            // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
+            // if there is no input, set the target speed to 0
+            if (_input.move == Vector2.zero)
+                targetSpeed = 0.0f;
+
+            // a reference to the players current horizontal velocity
+            float currentHorizontalSpeed = new Vector3(
+                _controller.velocity.x,
+                0.0f,
+                _controller.velocity.z
+            ).magnitude;
+
+            float speedOffset = 0.1f;
+            float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
+
+            // accelerate or decelerate to target speed
+            if (
+                currentHorizontalSpeed < targetSpeed - speedOffset
+                || currentHorizontalSpeed > targetSpeed + speedOffset
+            )
+            {
+                // creates curved result rather than a linear one giving a more organic speed change
+                // note T in Lerp is clamped, so we don't need to clamp our speed
+                _speed = Mathf.Lerp(
+                    currentHorizontalSpeed,
+                    targetSpeed * inputMagnitude,
+                    Time.deltaTime * SpeedChangeRate
+                );
+
+                // round speed to 3 decimal places
+                _speed = Mathf.Round(_speed * 1000f) / 1000f;
+            }
+            else
+            {
+                _speed = targetSpeed;
+            }
+
+            _animationBlend = Mathf.Lerp(
+                _animationBlend,
+                targetSpeed,
+                Time.deltaTime * SpeedChangeRate
+            );
+            if (_animationBlend < 0.01f)
+                _animationBlend = 0f;
+
+            // normalise input direction
+            Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
+
+            // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
+            // if there is a move input rotate player when the player is moving
+            if (_input.move != Vector2.zero)
+            {
+                if (_input.move.x < 0f)
+                {
+                    shifterSprite.flipX = true;
+                    shifterShadowSprite.flipX = true;
+                }
+                else if (_input.move.x > 0f)
+                {
+                    shifterSprite.flipX = false;
+                    shifterShadowSprite.flipX = false;
+                }
+
+                _targetRotation =
+                    Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg
+                    + _mainCamera.transform.eulerAngles.y;
+                float rotation = Mathf.SmoothDampAngle(
+                    transform.eulerAngles.y,
+                    _targetRotation,
+                    ref _rotationVelocity,
+                    RotationSmoothTime
+                );
+
+                // rotate to face input direction relative to camera position
+                // transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+            }
+
+            Vector3 targetDirection =
+                Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+
+            Vector3 safeDirection = targetDirection;
+            bool blockedByCliff = IsCliffAhead(targetDirection, out safeDirection);
+            CollisionFlags collisionFlags = CollisionFlags.None;
+
+            // Pre-move de-embed: if the capsule has been stuck for 3+ consecutive frames
+            // (input present, grounded, zero velocity — the tile-seam embed signature),
+            // nudge it upward BEFORE the main Move so the horizontal movement can escape the
+            // embedded geometry this very frame. Also zero _verticalVelocity so accumulated
+            // gravity doesn't immediately re-embed the capsule on the same frame.
+            if (_zeroVelocityInputFrames >= 3)
+            {
+                _controller.Move(new Vector3(0f, _controller.skinWidth, 0f));
+                _verticalVelocity = 0f;
+                _zeroVelocityInputFrames = 0;
+            }
+
+            // move the player
+            // Always apply gravity regardless of cliff state so _verticalVelocity never
+            // accumulates while the player is stuck, and the ground-check stays stable.
+            if (!blockedByCliff)
+            {
+                collisionFlags = _controller.Move(
+                    safeDirection.normalized * (_speed * Time.deltaTime)
+                        + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime
+                );
+
+                // Track consecutive frames of input-but-zero-velocity for the pre-move nudge.
+                if (_input.move != Vector2.zero && _controller.velocity == Vector3.zero && Grounded)
+                    _zeroVelocityInputFrames++;
+                else
+                    _zeroVelocityInputFrames = 0;
+            }
+            else
+            {
+                // Cliff is blocking horizontal movement — still apply gravity so the
+                // CharacterController stays grounded and _verticalVelocity doesn't build up.
+                _controller.Move(new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+                _zeroVelocityInputFrames = 0;
+            }
+
+            if (DebugMovementStalls)
+            {
+                LogMovementStall(positionBeforeMove, targetDirection, safeDirection, blockedByCliff, collisionFlags);
+            }
+
+            // update animator if using character
+            if (_hasAnimator)
+            {
+                _animator.SetFloat(_animIDSpeed, _animationBlend);
+                _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
+            }
+
+            // Handle sprite bounce animation
+            if (_input.move != Vector2.zero)
+            {
+                StartBounceAnimation();
+            }
+            else
+            {
+                StopBounceAnimation();
+            }
+        }
+
+        private void LogMovementStall(
+            Vector3 positionBeforeMove,
+            Vector3 targetDirection,
+            Vector3 safeDirection,
+            bool blockedByCliff,
+            CollisionFlags collisionFlags
+        )
+        {
+            if (_input == null || _controller == null)
+            {
+                return;
+            }
+
+            if (_input.move == Vector2.zero || _speed <= 0.01f)
+            {
+                return;
+            }
+
+            float movedDistance = Vector3.Distance(positionBeforeMove, transform.position);
+            bool effectivelyStalled = movedDistance < 0.001f;
+
+            if (!blockedByCliff && !effectivelyStalled)
+            {
+                return;
+            }
+
+            if (Time.time - _lastStallLogTime < StallLogInterval)
+            {
+                return;
+            }
+
+            _lastStallLogTime = Time.time;
+
+            Debug.Log(
+                $"[ThirdPersonController] Movement stall detected on '{name}'. "
+                    + $"input={_input.move}, speed={_speed:F3}, targetDir={targetDirection}, safeDir={safeDirection}, "
+                    + $"blockedByCliff={blockedByCliff}, grounded={Grounded}, verticalVelocity={_verticalVelocity:F3}, "
+                    + $"controllerVelocity={_controller.velocity}, collisionFlags={collisionFlags}, "
+                    + $"positionBefore={positionBeforeMove}, positionAfter={transform.position}",
+                this
+            );
+        }
+
+        private void StartBounceAnimation()
+        {
+            // Only start if not already bouncing
+            if (_bounceTween != null && _bounceTween.IsActive())
+                return;
+
+            if (spriteContainer == null)
+                return;
+
+            _bounceTween = spriteContainer.transform
+                .DOLocalMoveY(_spriteContainerOriginalPos.y + bounceHeight, bounceDuration / 2)
+                .SetEase(Ease.OutQuad)
+                .SetLoops(-1, LoopType.Yoyo);
+        }
+
+        private void StopBounceAnimation()
+        {
+            if (spriteContainer == null)
+                return;
+
+            if (_bounceTween != null && _bounceTween.IsActive())
+            {
+                _bounceTween.Kill();
+            }
+
+            // Return to original position smoothly
+            spriteContainer.transform
+                .DOLocalMoveY(_spriteContainerOriginalPos.y, 0.2f)
+                .SetEase(Ease.OutQuad);
+        }
+
+        private void JumpAndGravity()
+        {
+            if (Grounded)
+            {
+                // reset the fall timeout timer
+                _fallTimeoutDelta = FallTimeout;
+
+                // update animator if using character
+                if (_hasAnimator)
+                {
+                    _animator.SetBool(_animIDJump, false);
+                    _animator.SetBool(_animIDFreeFall, false);
+                }
+
+                // stop our velocity dropping infinitely when grounded
+                if (_verticalVelocity < 0.0f)
+                {
+                    _verticalVelocity = -2f;
+                }
+
+                // Jump
+                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+                {
+                    // the square root of H * -2 * G = how much velocity needed to reach desired height
+                    _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+
+                    // update animator if using character
+                    if (_hasAnimator)
+                    {
+                        _animator.SetBool(_animIDJump, true);
+                    }
+                }
+
+                // jump timeout
+                if (_jumpTimeoutDelta >= 0.0f)
+                {
+                    _jumpTimeoutDelta -= Time.deltaTime;
+                }
+            }
+            else
+            {
+                // reset the jump timeout timer
+                _jumpTimeoutDelta = JumpTimeout;
+
+                // fall timeout
+                if (_fallTimeoutDelta >= 0.0f)
+                {
+                    _fallTimeoutDelta -= Time.deltaTime;
+                }
+                else
+                {
+                    // update animator if using character
+                    if (_hasAnimator)
+                    {
+                        _animator.SetBool(_animIDFreeFall, true);
+                    }
+                }
+
+                // if we are not grounded, do not jump
+                _input.jump = false;
+            }
+
+            // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
+            if (_verticalVelocity < _terminalVelocity)
+            {
+                _verticalVelocity += Gravity * Time.deltaTime;
+            }
+        }
+
+        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
+        {
+            if (lfAngle < -360f)
+                lfAngle += 360f;
+            if (lfAngle > 360f)
+                lfAngle -= 360f;
+            return Mathf.Clamp(lfAngle, lfMin, lfMax);
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
+            Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
+
+            if (Grounded)
+                Gizmos.color = transparentGreen;
+            else
+                Gizmos.color = transparentRed;
+
+            // when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
+            Gizmos.DrawSphere(
+                new Vector3(
+                    transform.position.x,
+                    transform.position.y - GroundedOffset,
+                    transform.position.z
+                ),
+                GroundedRadius
+            );
+        }
+
+        private void OnFootstep(AnimationEvent animationEvent)
+        {
+            if (animationEvent.animatorClipInfo.weight > 0.5f)
+            {
+                if (FootstepAudioClips.Length > 0)
+                {
+                    var index = Random.Range(0, FootstepAudioClips.Length);
+                    AudioSource.PlayClipAtPoint(
+                        FootstepAudioClips[index],
+                        transform.TransformPoint(_controller.center),
+                        FootstepAudioVolume
+                    );
+                }
+            }
+        }
+
+        private void OnLand(AnimationEvent animationEvent)
+        {
+            if (animationEvent.animatorClipInfo.weight > 0.5f)
+            {
+                AudioSource.PlayClipAtPoint(
+                    LandingAudioClip,
+                    transform.TransformPoint(_controller.center),
+                    FootstepAudioVolume
+                );
+            }
+        }
+
+        public void Teleport(Vector3 position)
+        {
+            if (_controller == null)
+                return;
+
+            _controller.enabled = false;
+            transform.position = position;
+            _verticalVelocity = 0f;
+            _zeroVelocityInputFrames = 0;
+            _controller.enabled = true;
+        }
+    }
+}
