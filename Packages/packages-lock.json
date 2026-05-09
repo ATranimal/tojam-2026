@@ -9,6 +9,15 @@
         "com.unity.modules.unitywebrequest": "1.0.0"
       }
     },
+    "com.sinnwrig.fogvolumes": {
+      "version": "https://github.com/sinnwrig/URP-Fog-Volumes.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.render-pipelines.universal": "10.x.x"
+      },
+      "hash": "e926baaefce6f057533586f8e190efc62e1a7d0d"
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
