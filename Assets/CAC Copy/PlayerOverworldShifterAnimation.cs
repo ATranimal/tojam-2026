@@ -4,6 +4,7 @@ using StarterAssets;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using DG.Tweening;
+using Yarn.Unity;
 
 public class PlayerOverworldShifterAnimation : MonoBehaviour
 {
@@ -101,5 +102,11 @@ public class PlayerOverworldShifterAnimation : MonoBehaviour
         {
             return;
         }
+    }
+
+    [YarnCommand("freeze")]
+    public void ToggleFreeze(bool frozen = true)
+    {
+        isFrozen = frozen;
     }
 }
