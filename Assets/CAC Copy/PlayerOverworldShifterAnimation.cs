@@ -60,20 +60,29 @@ public class PlayerOverworldShifterAnimation : MonoBehaviour
         if (move.x < 0f)
         {
             spriteAnimator.GetComponent<SpriteRenderer>().flipX = true;
-            spriteShadowAnimator.GetComponent<SpriteRenderer>().flipX = true;
+            if (spriteShadowAnimator != null)
+                spriteShadowAnimator.GetComponent<SpriteRenderer>().flipX = true;
         }
         else if (move.x > 0f)
         {
             spriteAnimator.GetComponent<SpriteRenderer>().flipX = false;
-            spriteShadowAnimator.GetComponent<SpriteRenderer>().flipX = false;
+            if (spriteShadowAnimator != null)
+                spriteShadowAnimator.GetComponent<SpriteRenderer>().flipX = false;
         }
 
         spriteAnimator.SetFloat(AnimSpeed, speed);
+        if (spriteShadowAnimator != null)
+            spriteShadowAnimator.SetFloat(AnimSpeed, speed);
 
         if (speed > 0.01f)
         {
             spriteAnimator.SetFloat(AnimMoveX, move.x);
             spriteAnimator.SetFloat(AnimMoveY, move.y);
+            if (spriteShadowAnimator != null)
+            {
+                spriteShadowAnimator.SetFloat(AnimMoveX, move.x);
+                spriteShadowAnimator.SetFloat(AnimMoveY, move.y);
+            }
         }
     }
 

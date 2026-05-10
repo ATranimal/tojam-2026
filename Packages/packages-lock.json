@@ -1,5 +1,13 @@
 {
   "dependencies": {
+    "com.occasoftware.buto": {
+      "version": "file:com.occasoftware.buto",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.render-pipelines.universal": "14.0.7"
+      }
+    },
     "com.singularitygroup.hotreload": {
       "version": "file:com.singularitygroup.hotreload",
       "depth": 0,
@@ -249,6 +257,16 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "com.unity.universal-forwardplus-volumetric": {
+      "version": "https://github.com/mseonKim/URP-VolumetricFog-ForwardPlus.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.render-pipelines.core": "14.0.8",
+        "com.unity.render-pipelines.universal": "14.0.8"
+      },
+      "hash": "23bcf904770c491233725a90137e9c64fa059c7e"
     },
     "com.unity.visualscripting": {
       "version": "1.9.11",
