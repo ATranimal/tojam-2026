@@ -25507,12 +25507,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DayNightCycle
   dayLight: {fileID: 2097881083}
   nightLight: {fileID: 389979978}
+  dayLightNoonPitch: 60
+  dayLightHorizonPitch: 5
+  nightLightNoonPitch: 50
+  nightLightHorizonPitch: 5
   daySkybox: {fileID: 2100000, guid: 269baa50a2e37491c8be95a7ddc2d68a, type: 2}
   nightSkybox: {fileID: 2100000, guid: 6816ee2792af6744ebf879ef9f851b81, type: 2}
   dayAmbient: {r: 0.5, g: 0.55, b: 0.6, a: 1}
   nightAmbient: {r: 0.05, g: 0.05, b: 0.15, a: 1}
-  transitionDuration: 10
-  holdDuration: 2
+  transitionDuration: 60
+  holdDuration: 20
   autoAdvance: 1
   timeOfDay: 0
 --- !u!1001 &572876577
